@@ -77,8 +77,8 @@ void updateGauss(const arma::mat& Z, const arma::vec& res, arma::vec& der, arma:
 }
 
 // [[Rcpp::export]]
-arma::vec smqrGauss(const arma::mat& X, arma::vec Y, const double tau = 0.5, double h = 0.0, const double constTau = 1.345, 
-                    const double tol = 0.0001, const int iteMax = 5000) {
+arma::vec twoStep(const arma::mat& X, arma::vec Y, const double tau = 0.5, const double alpha = 0.05, double h = 0.0, 
+                  const double constTau = 1.345, const double tol = 0.0001, const int iteMax = 5000) {
   const int n = X.n_rows;
   const int p = X.n_cols;
   if (h <= 0.05) {
@@ -96,6 +96,7 @@ arma::vec smqrGauss(const arma::mat& X, arma::vec Y, const double tau = 0.5, dou
   arma::vec beta = huberReg(Z, Y, tau, der, gradOld, gradNew, n, p, n1, tol, constTau, iteMax);
   arma::vec quant = {tau};
   beta(0) = arma::as_scalar(arma::quantile(Y - Z.cols(1, p) * beta.rows(1, p), quant));
+  // first step: a smoothed quantile estimator
   arma::vec res = Y - Z * beta;
   updateGauss(Z, res, der, gradOld, tau, n1, h1);
   beta -= gradOld;
@@ -124,6 +125,4 @@ arma::vec smqrGauss(const arma::mat& X, arma::vec Y, const double tau = 0.5, dou
   beta(0) += my - arma::as_scalar(mx * beta.rows(1, p));
   return beta;
 }
-
-
 
