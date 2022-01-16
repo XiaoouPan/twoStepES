@@ -70,14 +70,12 @@ arma::mat standardize(arma::mat X, const arma::rowvec& mx, const arma::vec& sx1,
   return X;
 }
 
-// Different kernels for low-dimensional conquer 
 // [[Rcpp::export]]
 void updateGauss(const arma::mat& Z, const arma::vec& res, arma::vec& der, arma::vec& grad, const double tau, const double n1, const double h1) {
   der = arma::normcdf(-res * h1) - tau;
   grad = n1 * Z.t() * der;
 }
 
-// Low-dimensional conquer: estimation
 // [[Rcpp::export]]
 Rcpp::List smqrGauss(const arma::mat& X, arma::vec Y, const double tau = 0.5, double h = 0.0, const double constTau = 1.345, 
                      const double tol = 0.0001, const int iteMax = 5000) {
