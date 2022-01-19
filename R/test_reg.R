@@ -34,11 +34,12 @@ beta_es = c(inte$value / alpha, beta)
 fit1 = esreg(Y ~ X, alpha = alpha)
 fit2 = twoStepNonstd(X, Y, alpha = alpha)
 fit3 = twoStep(X, Y, alpha = alpha)
+fit4 = twoStepRob(X, Y, alpha = alpha)
 
 c(exam(beta_qr, fit1$coefficients_q), exam(beta_es, fit1$coefficients_e))
 c(exam(beta_qr, fit2$beta), exam(beta_es, fit2$theta))
 c(exam(beta_qr, fit3$beta), exam(beta_es, fit3$theta))
-
+c(exam(beta_qr, fit4$beta), exam(beta_es, fit4$theta))
 
 
 nseq = seq(2000, 10000, by = 2000)
