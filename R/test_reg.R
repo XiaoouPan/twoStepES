@@ -12,23 +12,33 @@ library(matrixStats)
 library(tikzDevice)
 library(ggplot2)
 
+exam = function(beta, betaHat) {
+  return (sqrt(mean((betaHat - beta)^2)))
+}
 
 ## a toy example
-x <- rchisq(1000, df = 1)
-y <- -x + (1 + 0.5 * x) * rnorm(1000)
-alpha = 0.025
-true_pars <- c(-1.959964, -1.979982, -2.337803, -2.168901)
-fit <- esreg(y ~ x, alpha=alpha)
-X = matrix(x, nrow = 1000)
-fit2 = twoStepNonstd(X, y, alpha = alpha)
-fit3 = twoStep(X, y, alpha = alpha)
-
-rbind(true_pars, fit$coefficients, c(fit2$beta, fit2$theta), c(fit3$beta, fit3$theta))
-
-
-integrand <- function(x) {qnorm(x)}
+n = 400
+p = 50
+Sigma = toeplitz(0.5^(0:(p - 1)))
+X = mvrnorm(n, rep(0, p), Sigma)
+err = rt(n, 2)
+beta = runif(p, 0, 2)
+Y = X %*% beta + err
+alpha = 0.1
+beta_qr = c(qt(alpha, 2), beta)
+integrand = function(x) {qt(x, 2)}
 inte = integrate(integrand, lower = 0, upper = alpha)
-inte$value / alpha
+beta_es = c(inte$value / alpha, beta)
+
+
+fit1 = esreg(Y ~ X, alpha = alpha)
+fit2 = twoStepNonstd(X, Y, alpha = alpha)
+fit3 = twoStep(X, Y, alpha = alpha)
+
+c(exam(beta_qr, fit1$coefficients_q), exam(beta_es, fit1$coefficients_e))
+c(exam(beta_qr, fit2$beta), exam(beta_es, fit2$theta))
+c(exam(beta_qr, fit3$beta), exam(beta_es, fit3$theta))
+
 
 
 nseq = seq(2000, 10000, by = 2000)
