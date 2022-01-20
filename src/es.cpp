@@ -260,9 +260,9 @@ Rcpp::List twoStepNonstd(const arma::mat& X, arma::vec Y, const double alpha = 0
   }
   // second step: an estimator for expected shortfall
   arma::vec w = Y - Z * beta;
-  w = arma::min(w, arma::zeros(n)) + alpha * Z * beta;
-  arma::vec theta = l2Reg(Z, w, gradOld, gradNew, n1, tol, iteMax);
-  theta = theta / alpha;
+  w = arma::min(w, arma::zeros(n));
+  arma::vec theta = arma::solve(Z, w);
+  theta = theta / alpha + beta;
   return Rcpp::List::create(Rcpp::Named("beta") = beta, Rcpp::Named("theta") = theta);
 }
 

@@ -20,38 +20,67 @@ exam = function(beta, betaHat) {
 n = 400
 p = 50
 Sigma = toeplitz(0.5^(0:(p - 1)))
-X = mvrnorm(n, rep(0, p), Sigma)
-err = rt(n, 2)
-beta = runif(p, 0, 2)
-Y = X %*% beta + err
-alpha = 0.1
-beta_qr = c(qt(alpha, 2), beta)
-integrand = function(x) {qt(x, 2)}
-inte = integrate(integrand, lower = 0, upper = alpha)
-beta_es = c(inte$value / alpha, beta)
-
-
-fit1 = esreg(Y ~ X, alpha = alpha)
-fit2 = twoStepNonstd(X, Y, alpha = alpha)
-fit3 = twoStep(X, Y, alpha = alpha)
-fit4 = twoStepRob(X, Y, alpha = alpha)
-
-c(exam(beta_qr, fit1$coefficients_q), exam(beta_es, fit1$coefficients_e))
-c(exam(beta_qr, fit2$beta), exam(beta_es, fit2$theta))
-c(exam(beta_qr, fit3$beta), exam(beta_es, fit3$theta))
-c(exam(beta_qr, fit4$beta), exam(beta_es, fit4$theta))
-
-
-nseq = seq(2000, 10000, by = 2000)
-pseq = floor(nseq / 100)
-l = length(nseq)
-tauSeq = seq(0.2, 0.8, by = 0.05)
-nTau = length(tauSeq)
-beta0 = qt(tauSeq, 2)
+alpha = 0.05
 M = 50
-coef1 = coef2 = coef3 = coef4 = coef5 = coef6 = coef7 = matrix(0, M, l)
-eff1 = eff2 = eff3 = eff4 = eff5 = eff6 = eff7 = matrix(0, M, l)
-time1 = time2 = time3 = time4 = time5 = time6 = time7 = matrix(0, M, l)
+coef1 = coef2 = time = matrix(0, M, 4)
+
+pb = txtProgressBar(style = 3)
+for (i in 1:M) {
+  set.seed(i)
+  X = mvrnorm(n, rep(0, p), Sigma)
+  err = rt(n, 2)
+  ## Homo 
+  beta = runif(p, 0, 2)
+  Y = X %*% beta + err
+  beta_qr = c(qt(alpha, 2), beta)
+  integrand = function(x) {qt(x, 2)}
+  inte = integrate(integrand, lower = 0, upper = alpha)
+  beta_es = c(inte$value / alpha, beta)
+  ## Hetero
+  #X[, 1] = abs(X[, 1])
+  #beta = runif(p - 1, 0, 2)
+  #Y = X[, 1] * err + X[, -1] %*% beta + rnorm(n)
+  
+  start = Sys.time()
+  fit1 = esreg(Y ~ X, alpha = alpha)
+  end = Sys.time()
+  time[i, 1] = as.numeric(difftime(end, start, units = "secs"))
+  coef1[i, 1] = exam(beta_qr, fit1$coefficients_q)
+  coef2[i, 1] = exam(beta_es, fit1$coefficients_e)
+  
+  start = Sys.time()
+  fit2 = twoStepNonstd(X, Y, alpha = alpha)
+  end = Sys.time()
+  time[i, 2] = as.numeric(difftime(end, start, units = "secs"))
+  coef1[i, 2] = exam(beta_qr, fit2$beta)
+  coef2[i, 2] = exam(beta_es, fit2$theta)
+  
+  start = Sys.time()
+  fit3 = twoStep(X, Y, alpha = alpha)
+  end = Sys.time()
+  time[i, 3] = as.numeric(difftime(end, start, units = "secs"))
+  coef1[i, 3] = exam(beta_qr, fit3$beta)
+  coef2[i, 3] = exam(beta_es, fit3$theta)
+  
+  start = Sys.time()
+  fit4 = twoStepRob(X, Y, alpha = alpha)
+  end = Sys.time()
+  time[i, 4] = as.numeric(difftime(end, start, units = "secs"))
+  coef1[i, 4] = exam(beta_qr, fit4$beta)
+  coef2[i, 4] = exam(beta_es, fit4$theta)
+  
+  setTxtProgressBar(pb, i / M)
+}
+
+rbind(colMeans(time), colMeans(coef1), colMeans(coef2))
+
+
+nseq = seq(500, 2000, by = 500)
+pseq = floor(nseq / 50)
+l = length(nseq)
+alpha = 0.1
+M = 50
+coef1 = coef2 = coef3 = coef4 = matrix(0, M, l)
 
 pb = txtProgressBar(style = 3)
 for (j in 1:l) {
@@ -64,21 +93,21 @@ for (j in 1:l) {
     X = mvrnorm(n, rep(0, p), Sigma)
     err = rt(n, 2)
     ## Homo 
-    #beta = runif(p, 0, 2)
-    #betaMat = rbind(beta0, matrix(beta, p, nTau))
-    #Y = X %*% beta + err
-    #indEff = 1
+    beta = runif(p, 0, 2)
+    Y = X %*% beta + err
+    beta_qr = c(qt(alpha, 2), beta)
+    integrand = function(x) {qt(x, 2)}
+    inte = integrate(integrand, lower = 0, upper = alpha)
+    beta_es = c(inte$value / alpha, beta)
     ## Hetero
-    X[, 1] = abs(X[, 1])
-    beta = runif(p - 1, 0, 2)
-    betaMat = rbind(qnorm(tauSeq), beta0, matrix(beta, p - 1, nTau))
-    Y = X[, 1] * err + X[, -1] %*% beta + rnorm(n)
-    indEff = 2
+    #X[, 1] = abs(X[, 1])
+    #beta = runif(p - 1, 0, 2)
+    #Y = X[, 1] * err + X[, -1] %*% beta + rnorm(n)
     
     start = Sys.time()
-    list = rq(Y ~ X, tau = tauSeq, method = "fn")
+    fit1 = esreg(Y ~ X, alpha = alpha)
     end = Sys.time()
-    time2[i, j] = as.numeric(difftime(end, start, units = "secs"))
+    time[i, j] = as.numeric(difftime(end, start, units = "secs"))
     coef2[i, j] = mean(sqrt(colSums((list$coefficients - betaMat)^2)))
     eff2[i, j] = mean(abs(list$coefficients[indEff, ] - betaMat[indEff, ]))
     
