@@ -26,12 +26,13 @@ pb = txtProgressBar(style = 3)
 for (i in 1:M) {
   set.seed(i)
   X = mvrnorm(n, rep(0, p), Sigma)
-  err = rt(n, 2)
+  #err = rt(n, 2)
+  err = rnorm(n)
   ## Homo 
   beta = runif(p, 0, 2)
   Y = X %*% beta + err
-  beta_qr = c(qt(alpha, 2), beta)
-  integrand = function(x) {qt(x, 2)}
+  beta_qr = c(qnorm(alpha), beta)
+  integrand = function(x) {qnorm(x)}
   inte = integrate(integrand, lower = 0, upper = alpha)
   beta_es = c(inte$value / alpha, beta)
   ## Hetero
