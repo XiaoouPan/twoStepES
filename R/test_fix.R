@@ -15,30 +15,38 @@ exam = function(beta, betaHat) {
 }
 
 ## ab example with fixed scale
-n = 400
-p = 50
+n = 4000
+p = n / 400
 Sigma = toeplitz(0.5^(0:(p - 1)))
 alpha = 0.05
-M = 50
+#qr0 = qnorm(alpha)
+#integrand = function(x) {qnorm(x)}
+qr0 = qt(alpha, 2)
+integrand = function(x) {qt(x, 2)}
+inte = integrate(integrand, lower = 0, upper = alpha)
+es0 = inte$value / alpha
+M = 20
 coef1 = coef2 = time = matrix(0, M, 4)
 
 pb = txtProgressBar(style = 3)
 for (i in 1:M) {
   set.seed(i)
   X = mvrnorm(n, rep(0, p), Sigma)
-  #err = rt(n, 2)
-  err = rnorm(n)
+  err = rt(n, 2)
+  #err = rnorm(n)
   ## Homo 
-  beta = runif(p, 0, 2)
-  Y = X %*% beta + err
-  beta_qr = c(qnorm(alpha), beta)
-  integrand = function(x) {qnorm(x)}
-  inte = integrate(integrand, lower = 0, upper = alpha)
-  beta_es = c(inte$value / alpha, beta)
+  #beta = runif(p, 0, 2)
+  #Y = X %*% beta + err
+  #beta_qr = c(qnorm(alpha), beta)
+  #integrand = function(x) {qnorm(x)}
+  #inte = integrate(integrand, lower = 0, upper = alpha)
+  #beta_es = c(inte$value / alpha, beta)
   ## Hetero
-  #X[, 1] = abs(X[, 1])
-  #beta = runif(p - 1, 0, 2)
-  #Y = X[, 1] * err + X[, -1] %*% beta + rnorm(n)
+  gamma = runif(p + 1, 1, 2)
+  eta = runif(p + 1, 1, 2)
+  Y = cbind(1, X) %*% gamma + (cbind(1, X) %*% eta) * err
+  beta_qr = gamma + eta * qr0
+  beta_es = gamma + eta * es0
   
   start = Sys.time()
   fit1 = esreg(Y ~ X, alpha = alpha)
