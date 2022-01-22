@@ -37,7 +37,6 @@ pb = txtProgressBar(style = 3)
 for (j in 1:l) {
   n = nseq[j]
   p = pseq[j]
-  h = ((p + log(n)) / n)^(0.4)
   Sigma = toeplitz(0.5^(0:(p - 1)))
   for (i in 1:M) {
     set.seed((j - 1) * M + i)
