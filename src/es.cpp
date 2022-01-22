@@ -414,7 +414,7 @@ Rcpp::List twoStepRob(const arma::mat& X, arma::vec Y, const double alpha = 0.2,
   beta.rows(1, p) %= sx1;
   beta(0) += my - arma::as_scalar(mx * beta.rows(1, p));
   theta.rows(1, p) %= sx1;
-  theta(0) = huberMean(w + mw - X * beta.rows(1, p), n);
+  theta(0) = huberMean(w + mw - X * theta.rows(1, p), n);
   theta = theta / alpha + beta;
   return Rcpp::List::create(Rcpp::Named("beta") = beta, Rcpp::Named("theta") = theta);
 }
