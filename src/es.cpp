@@ -267,6 +267,31 @@ Rcpp::List twoStepNonstd(const arma::mat& X, arma::vec Y, const double alpha = 0
 }
 
 // [[Rcpp::export]]
+Rcpp::List oracle(const arma::mat& X, arma::vec Y, const arma::vec& beta, const double alpha = 0.1, const double constTau = 1.345, 
+                  const double tol = 0.0001, const int iteMax = 5000) {
+  const int n = X.n_rows;
+  const int p = X.n_cols;
+  const double n1 = 1.0 / n;
+  arma::mat Z = arma::join_rows(arma::ones(n), X);
+  arma::vec w = Y - Z * beta;
+  w = arma::min(w, arma::zeros(n));
+  // standardiza design for more efficient computation
+  arma::rowvec mx = arma::mean(X, 0);
+  arma::vec sx1 = 1.0 / arma::stddev(X, 0, 0).t();
+  Z = arma::join_rows(arma::ones(n), standardize(X, mx, sx1, p));
+  double mw = arma::mean(w);
+  w -= mw;
+  arma::vec der(n);
+  arma::vec gradOld(p + 1), gradNew(p + 1);
+  arma::vec theta = l2Reg(Z, w, gradOld, gradNew, n1, tol, iteMax);
+  // transform back to the original scale
+  theta.rows(1, p) %= sx1;
+  theta(0) += mw - arma::as_scalar(mx * theta.rows(1, p));
+  theta = theta / alpha + beta;
+  return Rcpp::List::create(Rcpp::Named("beta") = beta, Rcpp::Named("theta") = theta);
+}
+
+// [[Rcpp::export]]
 Rcpp::List twoStepRob(const arma::mat& X, arma::vec Y, const double alpha = 0.2, double h = 0.0, const double constTau = 1.345, 
                       const double tol = 0.0001, const int iteMax = 5000) {
   const int n = X.n_rows;
