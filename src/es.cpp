@@ -9,6 +9,72 @@ int sgn(const double x) {
 }
 
 // [[Rcpp::export]]
+double f1(const double x, const arma::vec& resSq, const int n, const double rhs) {
+  return arma::mean(arma::min(resSq / x, arma::ones(n))) - rhs;
+}
+
+// [[Rcpp::export]]
+double rootf1(const arma::vec& resSq, const int n, const double rhs, double low, double up, const double tol = 0.001, const int maxIte = 500) {
+  int ite = 1;
+  while (ite <= maxIte && up - low > tol) {
+    double mid = 0.5 * (up + low);
+    double val = f1(mid, resSq, n, rhs);
+    if (val < 0) {
+      up = mid;
+    } else {
+      low = mid;
+    }
+    ite++;
+  }
+  return 0.5 * (low + up);
+}
+
+// [[Rcpp::export]]
+double huberDer(const arma::vec& res, const double tau, const int n) {
+  double rst = 0.0;
+  for (int i = 0; i < n; i++) {
+    double cur = res(i);
+    rst -= std::abs(cur) <= tau ? cur : tau * sgn(cur);
+  }
+  return rst / n;
+}
+
+// [[Rcpp::export]]
+double huberMean(arma::vec X, const int n, const double tol = 0.001, const int iteMax = 500) {
+  double rhs = std::log(n) / n;
+  double mx = arma::mean(X);
+  X -= mx;
+  double tau = arma::stddev(X) * std::sqrt((long double)n / std::log(n));
+  double derOld = huberDer(X, tau, n);
+  double mu = -derOld, muDiff = -derOld;
+  arma::vec res = X - mu;
+  arma::vec resSq = arma::square(res);
+  tau = std::sqrt((long double)rootf1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
+  double derNew = huberDer(res, tau, n);
+  double derDiff = derNew - derOld;
+  int ite = 1;
+  while (std::abs(derNew) > tol && ite <= iteMax) {
+    double alpha = 1.0;
+    double cross = muDiff * derDiff;
+    if (cross > 0) {
+      double a1 = cross / derDiff * derDiff;
+      double a2 = muDiff * muDiff / cross;
+      alpha = std::min(std::min(a1, a2), 100.0);
+    }
+    derOld = derNew;
+    muDiff = -alpha * derNew;
+    mu += muDiff;
+    res = X - mu;
+    resSq = arma::square(res);
+    tau = std::sqrt((long double)rootf1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
+    derNew = huberDer(res, tau, n);
+    derDiff = derNew - derOld;
+    ite++;
+  }
+  return mu + mx;
+}
+
+// [[Rcpp::export]]
 double mad(const arma::vec& x) {
   return 1.482602 * arma::median(arma::abs(x - arma::median(x)));
 }
@@ -348,7 +414,7 @@ Rcpp::List twoStepRob(const arma::mat& X, arma::vec Y, const double alpha = 0.2,
   beta.rows(1, p) %= sx1;
   beta(0) += my - arma::as_scalar(mx * beta.rows(1, p));
   theta.rows(1, p) %= sx1;
-  theta(0) += mw - arma::as_scalar(mx * theta.rows(1, p));
+  theta(0) = huberMean(w + mw - X * beta.rows(1, p), n);
   theta = theta / alpha + beta;
   return Rcpp::List::create(Rcpp::Named("beta") = beta, Rcpp::Named("theta") = theta);
 }

@@ -55,14 +55,14 @@ for (i in 1:M) {
   coef2[i, 1] = exam(beta_es, fit1$coefficients_e)
   
   start = Sys.time()
-  fit2 = twoStepNonstd(X, Y, alpha = alpha)
+  fit2 = oracle(X, Y, beta_qr, alpha = alpha)
   end = Sys.time()
   time[i, 2] = as.numeric(difftime(end, start, units = "secs"))
   coef1[i, 2] = exam(beta_qr, fit2$beta)
   coef2[i, 2] = exam(beta_es, fit2$theta)
   
   start = Sys.time()
-  fit3 = twoStep(X, Y, alpha = alpha)
+  fit3 = twoStep(X, Y, beta_qr, alpha = alpha)
   end = Sys.time()
   time[i, 3] = as.numeric(difftime(end, start, units = "secs"))
   coef1[i, 3] = exam(beta_qr, fit3$beta)
