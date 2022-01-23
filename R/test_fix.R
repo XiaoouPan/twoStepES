@@ -19,13 +19,15 @@ n = 4000
 alpha = 0.05
 p = n * alpha / 40
 Sigma = toeplitz(0.5^(0:(p - 1)))
-qr0 = qnorm(alpha)
+qr_norm = qnorm(alpha)
 integrand = function(x) {qnorm(x)}
-#df = 4
-#qr0 = qt(alpha, df)
-#integrand = function(x) {qt(x, df)}
 inte = integrate(integrand, lower = 0, upper = alpha)
-es0 = inte$value / alpha
+es_norm = inte$value / alpha
+df = 2
+qr_t = qt(alpha, df)
+integrand = function(x) {qt(x, df)}
+inte = integrate(integrand, lower = 0, upper = alpha)
+es_t = inte$value / alpha
 M = 20
 coef1 = coef2 = time = matrix(0, M, 4)
 
@@ -33,19 +35,22 @@ pb = txtProgressBar(style = 3)
 for (i in 1:M) {
   set.seed(i)
   X = mvrnorm(n, rep(0, p), Sigma)
-  #err = rt(n, df)
-  err = rnorm(n)
   ## Homo 
-  beta = runif(p, 0, 2)
-  Y = X %*% beta + err
-  beta_qr = c(qr0, beta)
-  beta_es = c(es0, beta)
+  #err = rt(n, df)
+  #err = rnorm(n)
+  #beta = runif(p, 0, 2)
+  #Y = X %*% beta + err
+  #beta_qr = c(qr0, beta)
+  #beta_es = c(es0, beta)
   ## Hetero
-  #gamma = runif(p + 1, 1, 2)
-  #eta = runif(p + 1, 1, 2)
-  #Y = cbind(1, X) %*% gamma + (cbind(1, X) %*% eta) * err
-  #beta_qr = gamma + eta * qr0
-  #beta_es = gamma + eta * es0
+  effect = rnorm(n)
+  err = rt(n, df)
+  gamma = runif(p - 1, 0, 2)
+  eta = runif(1, 0, 2)
+  X[, 1] = abs(X[, 1])
+  Y = X[, -1] %*% gamma + X[, 1] * eta * effect + err
+  beta_qr = c(qr_t, eta * qr_norm, gamma)
+  beta_es = c(es_t, eta * es_norm, gamma)
   
   start = Sys.time()
   fit1 = esreg(Y ~ X, alpha = alpha)
@@ -62,7 +67,7 @@ for (i in 1:M) {
   coef2[i, 2] = exam(beta_es, fit2$theta)
   
   start = Sys.time()
-  fit3 = twoStep(X, Y, beta_qr, alpha = alpha)
+  fit3 = twoStep(X, Y, alpha = alpha)
   end = Sys.time()
   time[i, 3] = as.numeric(difftime(end, start, units = "secs"))
   coef1[i, 3] = exam(beta_qr, fit3$beta)
