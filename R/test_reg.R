@@ -16,21 +16,22 @@ exam = function(beta, betaHat) {
   return (sqrt(mean((betaHat - beta)^2)))
 }
 
-nseq = seq(1000, 10000, by = 1000)
-pseq = floor(nseq / 100)
-l = length(nseq)
+nseq = seq(5000, 10000, by = 1000)
 alpha = 0.05
-#qr0 = qt(alpha, 2)
-#integrand = function(x) {qt(x, 2)}
-#inte = integrate(integrand, lower = 0, upper = alpha)
-#es0 = inte$value / alpha
-qr0 = qnorm(alpha)
+pseq = floor(nseq * alpha / 40)
+l = length(nseq)
+qr_norm = qnorm(alpha)
 integrand = function(x) {qnorm(x)}
 inte = integrate(integrand, lower = 0, upper = alpha)
-es0 = inte$value / alpha
+es_norm = inte$value / alpha
+df = 4
+qr_t = qt(alpha, df)
+integrand = function(x) {qt(x, df)}
+inte = integrate(integrand, lower = 0, upper = alpha)
+es_t = inte$value / alpha
 M = 20
 qr1 = qr2 = qr3 = matrix(0, M, l)
-es1 = es2 = es3 = matrix(0, M, l)
+es1 = es2 = es3 = es0 = matrix(0, M, l)
 time1 = time2 = time3 = matrix(0, M, l)
 
 pb = txtProgressBar(style = 3)
@@ -41,17 +42,20 @@ for (j in 1:l) {
   for (i in 1:M) {
     set.seed((j - 1) * M + i)
     X = mvrnorm(n, rep(0, p), Sigma)
-    #err = rt(n, 2)
-    err = rnorm(n)
-    ## Homo 
-    beta = runif(p, 0, 2)
-    Y = X %*% beta + err
-    beta_qr = c(qr0, beta)
-    beta_es = c(es0, beta)
     ## Hetero
-    #X[, 1] = abs(X[, 1])
-    #beta = runif(p - 1, 0, 2)
-    #Y = X[, 1] * err + X[, -1] %*% beta + rnorm(n)
+    effect = rnorm(n)
+    err = rt(n, df)
+    gamma = runif(p - 1, 0, 2)
+    eta = runif(1, 0, 2)
+    X[, 1] = abs(X[, 1])
+    Y = X[, -1] %*% gamma + X[, 1] * eta * effect + err
+    beta_qr = c(qr_t, eta * qr_norm, gamma)
+    beta_es = c(es_t, eta * es_norm, gamma)
+    
+    start = Sys.time()
+    fit0 = oracle(X, Y, beta_qr, alpha = alpha)
+    end = Sys.time()
+    es0[i, j] = exam(beta_es, fit0$theta)
     
     start = Sys.time()
     fit1 = esreg(Y ~ X, alpha = alpha)
