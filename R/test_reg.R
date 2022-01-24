@@ -16,15 +16,15 @@ exam = function(beta, betaHat) {
   return (sqrt(mean((betaHat - beta)^2)))
 }
 
-nseq = seq(5000, 10000, by = 1000)
-alpha = 0.05
+nseq = seq(4000, 10000, by = 2000)
+alpha = 0.1
 pseq = floor(nseq * alpha / 40)
 l = length(nseq)
 qr_norm = qnorm(alpha)
 integrand = function(x) {qnorm(x)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_norm = inte$value / alpha
-df = 4
+df = 2
 qr_t = qt(alpha, df)
 integrand = function(x) {qt(x, df)}
 inte = integrate(integrand, lower = 0, upper = alpha)
@@ -44,17 +44,16 @@ for (j in 1:l) {
     X = mvrnorm(n, rep(0, p), Sigma)
     ## Hetero
     effect = rnorm(n)
-    err = rt(n, df)
+    #err = rt(n, df)
+    err = rnorm(n)
     gamma = runif(p - 1, 0, 2)
     eta = runif(1, 0, 2)
     X[, 1] = abs(X[, 1])
     Y = X[, -1] %*% gamma + X[, 1] * eta * effect + err
-    beta_qr = c(qr_t, eta * qr_norm, gamma)
-    beta_es = c(es_t, eta * es_norm, gamma)
+    beta_qr = c(qr_norm, eta * qr_norm, gamma)
+    beta_es = c(es_norm, eta * es_norm, gamma)
     
-    start = Sys.time()
     fit0 = oracle(X, Y, beta_qr, alpha = alpha)
-    end = Sys.time()
     es0[i, j] = exam(beta_es, fit0$theta)
     
     start = Sys.time()
@@ -82,60 +81,54 @@ for (j in 1:l) {
   }
 }
 
-rbind(colMeans(time1), colMeans(time2), colMeans(time3))
-rbind(colMeans(qr1), colMeans(qr2), colMeans(qr3))
-rbind(colMeans(es1), colMeans(es2), colMeans(es3))
+write.csv(rbind(time1, time2, time3), "~/Dropbox/ES/Simulation/time_norm.csv")
+write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/ES/Simulation/qr_norm.csv")
+write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/ES/Simulation/es_norm.csv")
 
-write.csv(rbind(time1, time2, time3), "~/Dropbox/ES/Simulation/time_normal.csv")
-write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/ES/Simulation/qr_normal.csv")
-write.csv(rbind(es1, es2, es3), "~/Dropbox/ES/Simulation/es_normal.csv")
 
-### Estimation error: quantile 
+### Estimation error: QR 
 mean1 = colMeans(qr1, na.rm = TRUE)
 mean2 = colMeans(qr2, na.rm = TRUE)
 mean3 = colMeans(qr3, na.rm = TRUE)
 dat = rbind(cbind(nseq, mean1), cbind(nseq, mean2), cbind(nseq, mean3))
 dat = as.data.frame(dat)
 colnames(dat) = c("size", "coef")
-dat$type = c(rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed Huberized method}", l))
-dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed Huberized method}"))
+dat$type = c(rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), 
+             rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed robust method}", l))
+dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed robust method}"))
 
-setwd("~/Dropbox/ES")
-tikz("plot.tex", standAlone = TRUE, width = 5, height = 5)
 ggplot(dat, aes(x = size, y = coef)) +
   geom_line(aes(y = coef, color = type, linetype = type), size = 3) + 
-  #scale_linetype_manual(values = c("dashed", "twodash", "solid")) +
   #geom_ribbon(aes(y = coef, ymin = low, ymax = upp, fill = type), alpha = 0.3)
-  theme_bw() + xlab("Sample size") + ylab("Estimation error of quantile") +
+  theme_bw() + xlab("Sample size") + ylab("Estimation error of QR") +
   #theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
-  theme(legend.position = c(0.6, 0.75), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
+  theme(legend.position = c(0.65, 0.82), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
         legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
         axis.title = element_text(size = 20))
-dev.off()
-tools::texi2dvi("plot.tex", pdf = T)
 
 
 ### Estimation error: ES 
+mean0 = colMeans(es0, na.rm = TRUE)
 mean1 = colMeans(es1, na.rm = TRUE)
 mean2 = colMeans(es2, na.rm = TRUE)
 mean3 = colMeans(es3, na.rm = TRUE)
-dat = rbind(cbind(nseq, mean1), cbind(nseq, mean2), cbind(nseq, mean3))
+dat = rbind(cbind(nseq, mean0), cbind(nseq, mean1), cbind(nseq, mean2), cbind(nseq, mean3))
 dat = as.data.frame(dat)
 colnames(dat) = c("size", "coef")
-dat$type = c(rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed Huberized method}", l))
-dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed Huberized method}"))
+dat$type = c(rep("\\texttt{Oracle}", l), rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), 
+             rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed robust method}", l))
+dat$type = factor(dat$type, levels = c("\\texttt{Oracle}", "\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed robust method}"))
 
 setwd("~/Dropbox/ES")
 tikz("plot.tex", standAlone = TRUE, width = 5, height = 5)
 ggplot(dat, aes(x = size, y = coef)) +
   geom_line(aes(y = coef, color = type, linetype = type), size = 3) + 
-  #scale_linetype_manual(values = c("dashed", "twodash", "solid")) +
   #geom_ribbon(aes(y = coef, ymin = low, ymax = upp, fill = type), alpha = 0.3)
   theme_bw() + xlab("Sample size") + ylab("Estimation error of ES") +
-  theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
-  #theme(legend.position = c(0.6, 0.8), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
-  #      legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
-  #      axis.title = element_text(size = 20))
+  #theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
+  theme(legend.position = c(0.65, 0.82), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
+        legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
+        axis.title = element_text(size = 20))
 dev.off()
 tools::texi2dvi("plot.tex", pdf = T)
 
@@ -147,8 +140,8 @@ mean3 = colMeans(time3, na.rm = TRUE)
 dat = rbind(cbind(nseq, mean1), cbind(nseq, mean2), cbind(nseq, mean3))
 dat = as.data.frame(dat)
 colnames(dat) = c("size", "coef")
-dat$type = c(rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed Huberized method}", l))
-dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed Huberized method}"))
+dat$type = c(rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed robust method}", l))
+dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed robust method}"))
 
 setwd("~/Dropbox/ES")
 tikz("plot.tex", standAlone = TRUE, width = 5, height = 5)
@@ -158,9 +151,9 @@ ggplot(dat, aes(x = size, y = coef)) +
   #geom_ribbon(aes(y = coef, ymin = low, ymax = upp, fill = type), alpha = 0.3)
   theme_bw() + xlab("Sample size") + ylab("Elapsed time (in seconds)") +
   theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
-#theme(legend.position = c(0.6, 0.8), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
-#      legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
-#      axis.title = element_text(size = 20))
+  #theme(legend.position = c(0.3, 0.8), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
+  #    legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
+  #    axis.title = element_text(size = 20))
 dev.off()
 tools::texi2dvi("plot.tex", pdf = T)
 
