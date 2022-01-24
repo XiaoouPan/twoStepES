@@ -29,7 +29,7 @@ qr_t = qt(alpha, df)
 integrand = function(x) {qt(x, df)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_t = inte$value / alpha
-M = 20
+M = 10
 qr1 = qr2 = qr3 = matrix(0, M, l)
 es1 = es2 = es3 = es0 = matrix(0, M, l)
 time1 = time2 = time3 = matrix(0, M, l)
