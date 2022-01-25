@@ -15,7 +15,7 @@ exam = function(beta, betaHat) {
 }
 
 ## ab example with fixed scale
-n = 4000
+n = 10000
 alpha = 0.05
 p = n * alpha / 40
 Sigma = toeplitz(0.5^(0:(p - 1)))
@@ -38,12 +38,12 @@ for (i in 1:M) {
   ## Hetero
   effect = rnorm(n)
   err = rt(n, df)
-  gamma = runif(p, 0, 2)
-  eta = runif(p, 0, 2)
-  X = abs(X)
-  Y = X %*% gamma + (X %*% eta) * effect + err
-  beta_qr = c(qr_t, gamma + eta * qr_norm)
-  beta_es = c(es_t, gamma + eta * es_norm)
+  gamma = runif(p - 1, 0, 2)
+  eta = runif(1, 0, 2)
+  X[, 1] = abs(X[, 1])
+  Y = X[, -1] %*% gamma + (X[, 1] * eta) * effect + err
+  beta_qr = c(qr_t, eta * qr_norm, gamma)
+  beta_es = c(es_t, eta * es_norm, gamma)
   
   start = Sys.time()
   fit1 = esreg(Y ~ X, alpha = alpha)

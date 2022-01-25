@@ -16,20 +16,20 @@ exam = function(beta, betaHat) {
   return (sqrt(mean((betaHat - beta)^2)))
 }
 
-nseq = seq(4000, 10000, by = 2000)
-alpha = 0.1
+nseq = seq(4000, 20000, by = 2000)
+alpha = 0.05
 pseq = floor(nseq * alpha / 40)
 l = length(nseq)
 qr_norm = qnorm(alpha)
 integrand = function(x) {qnorm(x)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_norm = inte$value / alpha
-df = 2
+df = 4
 qr_t = qt(alpha, df)
 integrand = function(x) {qt(x, df)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_t = inte$value / alpha
-M = 10
+M = 50
 qr1 = qr2 = qr3 = matrix(0, M, l)
 es1 = es2 = es3 = es0 = matrix(0, M, l)
 time1 = time2 = time3 = matrix(0, M, l)
@@ -44,14 +44,16 @@ for (j in 1:l) {
     X = mvrnorm(n, rep(0, p), Sigma)
     ## Hetero
     effect = rnorm(n)
-    #err = rt(n, df)
-    err = rnorm(n)
+    err = rt(n, df)
+    # err = rnorm(n)
+    gamma = runif(p, 0, 2)
+    err = rt(n, df)
     gamma = runif(p - 1, 0, 2)
     eta = runif(1, 0, 2)
     X[, 1] = abs(X[, 1])
-    Y = X[, -1] %*% gamma + X[, 1] * eta * effect + err
-    beta_qr = c(qr_norm, eta * qr_norm, gamma)
-    beta_es = c(es_norm, eta * es_norm, gamma)
+    Y = X[, -1] %*% gamma + (X[, 1] * eta) * effect + err
+    beta_qr = c(qr_t, eta * qr_norm, gamma)
+    beta_es = c(es_t, eta * es_norm, gamma)
     
     fit0 = oracle(X, Y, beta_qr, alpha = alpha)
     es0[i, j] = exam(beta_es, fit0$theta)
@@ -81,9 +83,9 @@ for (j in 1:l) {
   }
 }
 
-write.csv(rbind(time1, time2, time3), "~/Dropbox/ES/Simulation/time_norm.csv")
-write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/ES/Simulation/qr_norm.csv")
-write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/ES/Simulation/es_norm.csv")
+write.csv(rbind(time1, time2, time3), "~/Dropbox/ES/Simulation/time_t4.csv")
+write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/ES/Simulation/qr_t4.csv")
+write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/ES/Simulation/es_t4.csv")
 
 
 ### Estimation error: QR 
