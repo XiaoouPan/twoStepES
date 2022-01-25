@@ -179,10 +179,12 @@ arma::vec expectile(const arma::mat& Z, const arma::vec& Y, const double tau, ar
 arma::vec huberReg(const arma::mat& Z, const arma::vec& Y, arma::vec& der, arma::vec& gradOld, arma::vec& gradNew, const int n, 
                    const double n1, const double tol = 0.0001, const double constTau = 1.345, const int iteMax = 5000) {
   double rob = constTau * mad(Y);
+  std::cout << "min" << arma::min(Y) << ", max" << arma::max(Y) << ", median" << arma::median(Y) << ", MAD: " << mad(Y) << std::endl; 
   updateHuber(Z, Y, der, gradOld, n, rob, n1);
   arma::vec beta = -gradOld, betaDiff = -gradOld;
   arma::vec res = Y - Z * beta;
   rob = constTau * mad(res);
+  std::cout << "rob: " << rob << std::endl; 
   updateHuber(Z, res, der, gradNew, n, rob, n1);
   arma::vec gradDiff = gradNew - gradOld;
   int ite = 1;
@@ -199,6 +201,7 @@ arma::vec huberReg(const arma::mat& Z, const arma::vec& Y, arma::vec& der, arma:
     beta += betaDiff;
     res -= Z * betaDiff;
     rob = constTau * mad(res);
+    std::cout << "rob: " << rob << std::endl; 
     updateHuber(Z, res, der, gradNew, n, rob, n1);
     gradDiff = gradNew - gradOld;
     ite++;
@@ -408,14 +411,15 @@ Rcpp::List twoStepRob(const arma::mat& X, arma::vec Y, const double alpha = 0.2,
   arma::vec w = Y - Z * beta;
   w = arma::min(w, arma::zeros(n));
   double mw = arma::mean(w);
+  std::cout << "mean of w: " << mw << std::endl;
   w -= mw;
   arma::vec theta = huberReg(Z, w, der, gradOld, gradNew, n, n1, tol, constTau, iteMax);
   // transform back to the original scale
   beta.rows(1, p) %= sx1;
   beta(0) += my - arma::as_scalar(mx * beta.rows(1, p));
   theta.rows(1, p) %= sx1;
-  theta(0) += mw - arma::as_scalar(mx * theta.rows(1, p));
-  //theta(0) = huberMean(w + mw - X * theta.rows(1, p), n);
+  //theta(0) += mw - arma::as_scalar(mx * theta.rows(1, p));
+  theta(0) = huberMean(w + mw - X * theta.rows(1, p), n);
   theta = theta / alpha + beta;
   return Rcpp::List::create(Rcpp::Named("beta") = beta, Rcpp::Named("theta") = theta);
 }

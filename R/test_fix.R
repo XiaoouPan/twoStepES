@@ -35,22 +35,15 @@ pb = txtProgressBar(style = 3)
 for (i in 1:M) {
   set.seed(i)
   X = mvrnorm(n, rep(0, p), Sigma)
-  ## Homo 
-  #err = rt(n, df)
-  #err = rnorm(n)
-  #beta = runif(p, 0, 2)
-  #Y = X %*% beta + err
-  #beta_qr = c(qr0, beta)
-  #beta_es = c(es0, beta)
   ## Hetero
   effect = rnorm(n)
-  err = rt(n, df)
+  err = rnorm(n)
   gamma = runif(p - 1, 0, 2)
   eta = runif(1, 0, 2)
   X[, 1] = abs(X[, 1])
   Y = X[, -1] %*% gamma + X[, 1] * eta * effect + err
-  beta_qr = c(qr_t, eta * qr_norm, gamma)
-  beta_es = c(es_t, eta * es_norm, gamma)
+  beta_qr = c(qr_norm, eta * qr_norm, gamma)
+  beta_es = c(es_norm, eta * es_norm, gamma)
   
   start = Sys.time()
   fit1 = esreg(Y ~ X, alpha = alpha)
