@@ -23,7 +23,7 @@ qr_norm = qnorm(alpha)
 integrand = function(x) {qnorm(x)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_norm = inte$value / alpha
-df = 2
+df = 4
 qr_t = qt(alpha, df)
 integrand = function(x) {qt(x, df)}
 inte = integrate(integrand, lower = 0, upper = alpha)
@@ -37,13 +37,13 @@ for (i in 1:M) {
   X = mvrnorm(n, rep(0, p), Sigma)
   ## Hetero
   effect = rnorm(n)
-  err = rnorm(n)
-  gamma = runif(p - 1, 0, 2)
-  eta = runif(1, 0, 2)
-  X[, 1] = abs(X[, 1])
-  Y = X[, -1] %*% gamma + X[, 1] * eta * effect + err
-  beta_qr = c(qr_norm, eta * qr_norm, gamma)
-  beta_es = c(es_norm, eta * es_norm, gamma)
+  err = rt(n, df)
+  gamma = runif(p, 0, 2)
+  eta = runif(p, 0, 2)
+  X = abs(X)
+  Y = X %*% gamma + (X %*% eta) * effect + err
+  beta_qr = c(qr_t, gamma + eta * qr_norm)
+  beta_es = c(es_t, gamma + eta * es_norm)
   
   start = Sys.time()
   fit1 = esreg(Y ~ X, alpha = alpha)
