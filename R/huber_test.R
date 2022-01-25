@@ -26,7 +26,7 @@ test_Huber = function(Z, Y) {
   gradOld = rep(0, p + 1)
   gradNew = rep(0, p + 1)
   der = rep(0, n)
-  return (as.numeric(huberReg(Z, Y, der, gradOld, gradNew, n, 1 / n)))
+  return (as.numeric(huberReg(Z, Y, der, gradOld, gradNew, n, p, 1 / n)))
 }
 
 n = 4000
