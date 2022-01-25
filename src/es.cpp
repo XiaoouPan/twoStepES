@@ -30,6 +30,27 @@ double rootf1(const arma::vec& resSq, const int n, const double rhs, double low,
 }
 
 // [[Rcpp::export]]
+double g1(const double x, const arma::vec& resSq, const int n, const double rhs) {
+  return arma::mean(arma::min(resSq / x, arma::ones(n))) - rhs;
+}
+
+// [[Rcpp::export]]
+double rootg1(const arma::vec& resSq, const int n, const double rhs, double low, double up, const double tol = 0.001, const int maxIte = 500) {
+  int ite = 0;
+  while (ite <= maxIte && up - low > tol) {
+    double mid = 0.5 * (up + low);
+    double val = g1(mid, resSq, n, rhs);
+    if (val < 0) {
+      up = mid;
+    } else {
+      low = mid;
+    }
+    ite++;
+  }
+  return 0.5 * (low + up);
+}
+
+// [[Rcpp::export]]
 double huberDer(const arma::vec& res, const double tau, const int n) {
   double rst = 0.0;
   for (int i = 0; i < n; i++) {
