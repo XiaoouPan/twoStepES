@@ -197,15 +197,16 @@ arma::vec expectile(const arma::mat& Z, const arma::vec& Y, const double tau, ar
 }
 
 // [[Rcpp::export]]
-arma::vec huberReg(const arma::mat& Z, const arma::vec& Y, arma::vec& der, arma::vec& gradOld, arma::vec& gradNew, const int n, 
+arma::vec huberReg(const arma::mat& Z, const arma::vec& Y, arma::vec& der, arma::vec& gradOld, arma::vec& gradNew, const int n, const int p,
                    const double n1, const double tol = 0.0001, const double constTau = 1.345, const int iteMax = 5000) {
-  double rob = constTau * mad(Y);
-  std::cout << "min" << arma::min(Y) << ", max" << arma::max(Y) << ", median" << arma::median(Y) << ", MAD: " << mad(Y) << std::endl; 
+  double rhs = n1 * (p + std::log(n * p));
+  arma::vec resSq = arma::square(Y);
+  double rob = std::sqrt((long double)rootg1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
   updateHuber(Z, Y, der, gradOld, n, rob, n1);
   arma::vec beta = -gradOld, betaDiff = -gradOld;
   arma::vec res = Y - Z * beta;
-  rob = constTau * mad(res);
-  std::cout << "rob: " << rob << std::endl; 
+  resSq = arma::square(res);
+  rob = std::sqrt((long double)rootg1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
   updateHuber(Z, res, der, gradNew, n, rob, n1);
   arma::vec gradDiff = gradNew - gradOld;
   int ite = 1;
@@ -221,8 +222,8 @@ arma::vec huberReg(const arma::mat& Z, const arma::vec& Y, arma::vec& der, arma:
     betaDiff = -alpha * gradNew;
     beta += betaDiff;
     res -= Z * betaDiff;
-    rob = constTau * mad(res);
-    std::cout << "rob: " << rob << std::endl; 
+    resSq = arma::square(res);
+    rob = std::sqrt((long double)rootg1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
     updateHuber(Z, res, der, gradNew, n, rob, n1);
     gradDiff = gradNew - gradOld;
     ite++;
@@ -432,9 +433,8 @@ Rcpp::List twoStepRob(const arma::mat& X, arma::vec Y, const double alpha = 0.2,
   arma::vec w = Y - Z * beta;
   w = arma::min(w, arma::zeros(n));
   double mw = arma::mean(w);
-  std::cout << "mean of w: " << mw << std::endl;
   w -= mw;
-  arma::vec theta = huberReg(Z, w, der, gradOld, gradNew, n, n1, tol, constTau, iteMax);
+  arma::vec theta = huberReg(Z, w, der, gradOld, gradNew, n, p, n1, tol, constTau, iteMax);
   // transform back to the original scale
   beta.rows(1, p) %= sx1;
   beta(0) += my - arma::as_scalar(mx * beta.rows(1, p));
