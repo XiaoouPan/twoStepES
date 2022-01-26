@@ -24,7 +24,7 @@ qr_norm = qnorm(alpha)
 integrand = function(x) {qnorm(x)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_norm = inte$value / alpha
-df = 3
+df = 2
 qr_t = qt(alpha, df)
 integrand = function(x) {qt(x, df)}
 inte = integrate(integrand, lower = 0, upper = alpha)
@@ -81,10 +81,9 @@ for (j in 1:l) {
   }
 }
 
-write.csv(rbind(time1, time2, time3), "~/Dropbox/ES/Simulation/time_norm.csv")
-write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/ES/Simulation/qr_norm.csv")
-write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/ES/Simulation/es_norm.csv")
-
+#write.csv(rbind(time1, time2, time3), "~/Dropbox/ES/Simulation/time_norm.csv")
+#write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/ES/Simulation/qr_norm.csv")
+#write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/ES/Simulation/es_norm.csv")
 
 ### Estimation error: QR 
 mean1 = colMeans(qr1, na.rm = TRUE)
@@ -107,6 +106,13 @@ ggplot(dat, aes(x = size, y = coef)) +
         axis.title = element_text(size = 20))
 
 
+
+data = as.matrix(read.csv("~/Dropbox/ES/Simulation/es_t4.csv"))[, -1]
+es1 = data[1:50, ]
+es2 = data[51:100, ]
+es3 = data[101:150, ]
+es0 = data[151:200, ]
+
 ### Estimation error: ES 
 mean0 = colMeans(es0, na.rm = TRUE)
 mean1 = colMeans(es1, na.rm = TRUE)
@@ -117,7 +123,7 @@ dat = as.data.frame(dat)
 colnames(dat) = c("size", "coef")
 dat$type = c(rep("\\texttt{Oracle}", l), rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), 
              rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed robust method}", l))
-dat$type = factor(dat$type, levels = c("\\texttt{Oracle}", "\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed robust method}"))
+dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed robust method}", "\\texttt{Oracle}"))
 
 setwd("~/Dropbox/ES")
 tikz("plot.tex", standAlone = TRUE, width = 5, height = 5)
