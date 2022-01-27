@@ -107,7 +107,7 @@ ggplot(dat, aes(x = size, y = coef)) +
 
 
 
-data = as.matrix(read.csv("~/Dropbox/ES/Simulation/es_t4.csv"))[, -1]
+data = as.matrix(read.csv("~/Dropbox/SQR/ES/Simulation/es_norm.csv"))[, -1]
 es1 = data[1:50, ]
 es2 = data[51:100, ]
 es3 = data[101:150, ]
@@ -135,6 +135,31 @@ ggplot(dat, aes(x = size, y = coef)) +
   theme(legend.position = c(0.63, 0.82), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
         legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
         axis.title = element_text(size = 20))
+dev.off()
+tools::texi2dvi("plot.tex", pdf = T)
+
+### Standard deviation: ES 
+mean0 = colSds(es0, na.rm = TRUE)
+mean1 = colSds(es1, na.rm = TRUE)
+mean2 = colSds(es2, na.rm = TRUE)
+mean3 = colSds(es3, na.rm = TRUE)
+dat = rbind(cbind(nseq, mean0), cbind(nseq, mean1), cbind(nseq, mean2), cbind(nseq, mean3))
+dat = as.data.frame(dat)
+colnames(dat) = c("size", "coef")
+dat$type = c(rep("\\texttt{Oracle}", l), rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), 
+             rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed robust method}", l))
+dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed robust method}", "\\texttt{Oracle}"))
+
+setwd("~/Dropbox/SQR/ES/Simulation")
+tikz("plot.tex", standAlone = TRUE, width = 5, height = 5)
+ggplot(dat, aes(x = size, y = coef)) +
+  geom_line(aes(y = coef, color = type, linetype = type), size = 3) + 
+  #geom_ribbon(aes(y = coef, ymin = low, ymax = upp, fill = type), alpha = 0.3)
+  theme_bw() + xlab("Sample size") + ylab("Standard deviation of ES") +
+  theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
+  #theme(legend.position = c(0.63, 0.82), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
+  #      legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
+  #      axis.title = element_text(size = 20))
 dev.off()
 tools::texi2dvi("plot.tex", pdf = T)
 
