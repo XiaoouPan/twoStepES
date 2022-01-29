@@ -16,20 +16,20 @@ exam = function(beta, betaHat) {
   return (sqrt(mean((betaHat - beta)^2)))
 }
 
-nseq = seq(4000, 10000, by = 2000)
+nseq = seq(4000, 20000, by = 2000)
 alpha = 0.05
-pseq = floor(nseq * alpha / 40)
+pseq = floor(nseq * alpha / 50)
 l = length(nseq)
 qr_norm = qnorm(alpha)
 integrand = function(x) {qnorm(x)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_norm = inte$value / alpha
-df = 2
+df = 4
 qr_t = qt(alpha, df)
 integrand = function(x) {qt(x, df)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_t = inte$value / alpha
-M = 10
+M = 50
 qr1 = qr2 = qr3 = matrix(0, M, l)
 es1 = es2 = es3 = es0 = matrix(0, M, l)
 time1 = time2 = time3 = matrix(0, M, l)
@@ -43,15 +43,15 @@ for (j in 1:l) {
     set.seed((j - 1) * M + i)
     X = mvrnorm(n, rep(0, p), Sigma)
     ## Hetero
-    #err = rnorm(n)
-    err = rt(n, df)
+    err = rnorm(n)
+    #err = rt(n, df)
     gamma = runif(p + 1, 0, 2)
     eta = runif(1, 0, 2)
-    X[, 1] = abs(X[, 1])
+    X = abs(X)
     Y = cbind(1, X) %*% gamma + (X[, 1] * eta) * err
-    beta_qr = gamma 
+    beta_qr = gamma
     beta_qr[2] = beta_qr[2] + eta * qr_t
-    beta_es = gamma 
+    beta_es = gamma
     beta_es[2] = beta_es[2] + eta * es_t
     
     fit0 = oracle(X, Y, beta_qr, alpha = alpha)
@@ -82,9 +82,9 @@ for (j in 1:l) {
   }
 }
 
-#write.csv(rbind(time1, time2, time3), "~/Dropbox/ES/Simulation/time_norm.csv")
-#write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/ES/Simulation/qr_norm.csv")
-#write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/ES/Simulation/es_norm.csv")
+write.csv(rbind(time1, time2, time3), "~/Dropbox/SQR/ES/Simulation/time_t4.csv")
+write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/SQR/ES/Simulation/qr_t4.csv")
+write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/SQR/ES/Simulation/es_t4.csv")
 
 ### Estimation error: QR 
 mean1 = colMeans(qr1, na.rm = TRUE)
@@ -108,7 +108,7 @@ ggplot(dat, aes(x = size, y = coef)) +
 
 
 
-data = as.matrix(read.csv("~/Dropbox/SQR/ES/Simulation/es_norm.csv"))[, -1]
+data = as.matrix(read.csv("~/Dropbox/SQR/ES/Simulation/es_t3.csv"))[, -1]
 es1 = data[1:50, ]
 es2 = data[51:100, ]
 es3 = data[101:150, ]
@@ -126,16 +126,16 @@ dat$type = c(rep("\\texttt{Oracle}", l), rep("\\texttt{Dimitriadis} \\& \\texttt
              rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed robust method}", l))
 dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed robust method}", "\\texttt{Oracle}"))
 
-setwd("~/Dropbox/ES")
+setwd("~/Dropbox/SQR/ES/Simulation")
 tikz("plot.tex", standAlone = TRUE, width = 5, height = 5)
 ggplot(dat, aes(x = size, y = coef)) +
   geom_line(aes(y = coef, color = type, linetype = type), size = 3) + 
   #geom_ribbon(aes(y = coef, ymin = low, ymax = upp, fill = type), alpha = 0.3)
   theme_bw() + xlab("Sample size") + ylab("Estimation error of ES") +
-  #theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
-  theme(legend.position = c(0.63, 0.82), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
-        legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
-        axis.title = element_text(size = 20))
+  theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
+  #theme(legend.position = c(0.63, 0.80), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
+  #      legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
+  #      axis.title = element_text(size = 20))
 dev.off()
 tools::texi2dvi("plot.tex", pdf = T)
 
@@ -166,6 +166,12 @@ tools::texi2dvi("plot.tex", pdf = T)
 
 
 ## Time plot
+
+data = as.matrix(read.csv("~/Dropbox/SQR/ES/Simulation/time_t3.csv"))[, -1]
+time1 = data[1:50, ]
+time2 = data[51:100, ]
+time3 = data[101:150, ]
+
 mean1 = colMeans(time1, na.rm = TRUE)
 mean2 = colMeans(time2, na.rm = TRUE)
 mean3 = colMeans(time3, na.rm = TRUE)
