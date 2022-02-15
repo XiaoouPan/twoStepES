@@ -468,7 +468,7 @@ Rcpp::List oracle(const arma::mat& X, arma::vec Y, const arma::vec& beta, const 
 }
 
 // [[Rcpp::export]]
-Rcpp::List twoStepRob(const arma::mat& X, arma::vec Y, const double alpha = 0.2, double h = 0.0, const double constTau = 1.345, 
+Rcpp::List twoStepRob(const arma::mat& X, arma::vec Y, const double alpha = 0.1, double h = 0.0, const double constTau = 1.345, 
                       const double tol = 0.0001, const int iteMax = 5000) {
   const int n = X.n_rows;
   const int p = X.n_cols;
@@ -581,7 +581,7 @@ Rcpp::List twoStepLambda(const arma::mat& X, arma::vec Y, const double lambda = 
   w = arma::min(w, arma::zeros(n));
   double mw = arma::mean(w);
   w -= mw;
-  arma::vec theta = l2Reg(Z, w, gradOld, gradNew, n1, tol, iteMax);
+  arma::vec theta = l2RegLambda(Z, w, gradOld, gradNew, lambda, n, n1, tol, iteMax);
   // transform back to the original scale
   beta.rows(1, p) %= sx1;
   beta(0) += my - arma::as_scalar(mx * beta.rows(1, p));
@@ -592,8 +592,8 @@ Rcpp::List twoStepLambda(const arma::mat& X, arma::vec Y, const double lambda = 
 }
 
 // [[Rcpp::export]]
-Rcpp::List twoStepRobLambda(const arma::mat& X, arma::vec Y, const double alpha = 0.2, double h = 0.0, const double constTau = 1.345, 
-                            const double tol = 0.0001, const int iteMax = 5000) {
+Rcpp::List twoStepRobLambda(const arma::mat& X, arma::vec Y, const double lambda = 0.5, const double alpha = 0.1, double h = 0.0, 
+                            const double constTau = 1.345, const double tol = 0.0001, const int iteMax = 5000) {
   const int n = X.n_rows;
   const int p = X.n_cols;
   if (h <= 0.05) {
@@ -643,7 +643,7 @@ Rcpp::List twoStepRobLambda(const arma::mat& X, arma::vec Y, const double alpha 
   w = arma::min(w, arma::zeros(n));
   double mw = arma::mean(w);
   w -= mw;
-  arma::vec theta = huberReg(Z, w, der, gradOld, gradNew, n, p, n1, tol, constTau, iteMax);
+  arma::vec theta = huberRegLambda(Z, w, der, gradOld, gradNew, lambda, n, p, n1, tol, constTau, iteMax);
   // transform back to the original scale
   beta.rows(1, p) %= sx1;
   beta(0) += my - arma::as_scalar(mx * beta.rows(1, p));
