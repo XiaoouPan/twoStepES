@@ -106,6 +106,12 @@ void updateL2(const arma::mat& Z, const arma::vec& res, arma::vec& grad, const d
 }
 
 // [[Rcpp::export]]
+void updateL2Reg(const arma::mat& Z, const arma::vec& res, arma::vec& grad, const double lambda, const double n, const double n1) {
+  grad = -n1 * Z.t() * res + lambda * n1 * Z.t() * arma::ones(n);
+}
+
+
+// [[Rcpp::export]]
 void updateExpectile(const arma::mat& Z, const arma::vec& res, const double tau, arma::vec& der, arma::vec& grad, const int n, const double rob, const double n1) {
   for (int i = 0; i < n; i++) {
     double cur = res(i);
@@ -135,6 +141,22 @@ void updateHuber(const arma::mat& Z, const arma::vec& res, arma::vec& der, arma:
     }
   }
   grad = n1 * Z.t() * der;
+}
+
+// [[Rcpp::export]]
+void updateHuberReg(const arma::mat& Z, const arma::vec& res, arma::vec& der, arma::vec& grad, const double lambda, const int n, const double rob, 
+                    const double n1) {
+  for (int i = 0; i < n; i++) {
+    double cur = res(i);
+    if (cur > rob) {
+      der(i) = -rob;
+    } else if (cur > -rob) {
+      der(i) = -cur;
+    } else {
+      der(i) = rob;
+    }
+  }
+  grad = n1 * Z.t() * der + lambda * n1 * Z.t() * arma::ones(n);
 }
 
 // [[Rcpp::export]]
