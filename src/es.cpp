@@ -110,7 +110,6 @@ void updateL2Reg(const arma::mat& Z, const arma::vec& res, arma::vec& grad, cons
   grad = -n1 * Z.t() * res + lambda * n1 * Z.t() * arma::ones(n);
 }
 
-
 // [[Rcpp::export]]
 void updateExpectile(const arma::mat& Z, const arma::vec& res, const double tau, arma::vec& der, arma::vec& grad, const int n, const double rob, const double n1) {
   for (int i = 0; i < n; i++) {
@@ -188,6 +187,34 @@ arma::vec l2Reg(const arma::mat& Z, const arma::vec& Y, arma::vec& gradOld, arma
 }
 
 // [[Rcpp::export]]
+arma::vec l2RegLambda(const arma::mat& Z, const arma::vec& Y, arma::vec& gradOld, arma::vec& gradNew, const double lambda, const int n, 
+                      const double n1, const double tol = 0.0001, const int iteMax = 5000) {
+  updateL2Reg(Z, Y, gradOld, lambda, n, n1);
+  arma::vec beta = -gradOld, betaDiff = -gradOld;
+  arma::vec res = Y - Z * beta;
+  updateL2Reg(Z, res, gradNew, lambda, n, n1);
+  arma::vec gradDiff = gradNew - gradOld;
+  int ite = 1;
+  while (arma::norm(gradNew, "inf") > tol && ite <= iteMax) {
+    double alpha = 1.0;
+    double cross = arma::as_scalar(betaDiff.t() * gradDiff);
+    if (cross > 0) {
+      double a1 = cross / arma::as_scalar(gradDiff.t() * gradDiff);
+      double a2 = arma::as_scalar(betaDiff.t() * betaDiff) / cross;
+      alpha = std::min(std::min(a1, a2), 100.0);
+    }
+    gradOld = gradNew;
+    betaDiff = -alpha * gradNew;
+    beta += betaDiff;
+    res -= Z * betaDiff;
+    updateL2Reg(Z, res, gradNew, lambda, n, n1);
+    gradDiff = gradNew - gradOld;
+    ite++;
+  }
+  return beta;
+}
+
+// [[Rcpp::export]]
 arma::vec expectile(const arma::mat& Z, const arma::vec& Y, const double tau, arma::vec& der, arma::vec& gradOld, arma::vec& gradNew, const int n, 
                     const double n1, const double tol = 0.0001, const double constTau = 1.345, const int iteMax = 5000) {
   double rob = constTau * mad(Y);
@@ -247,6 +274,42 @@ arma::vec huberReg(const arma::mat& Z, const arma::vec& Y, arma::vec& der, arma:
     resSq = arma::square(res);
     rob = std::sqrt((long double)rootg1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
     updateHuber(Z, res, der, gradNew, n, rob, n1);
+    gradDiff = gradNew - gradOld;
+    ite++;
+  }
+  return beta;
+}
+
+// [[Rcpp::export]]
+arma::vec huberRegLambda(const arma::mat& Z, const arma::vec& Y, arma::vec& der, arma::vec& gradOld, arma::vec& gradNew, const double lambda, 
+                         const int n, const int p, const double n1, const double tol = 0.0001, const double constTau = 1.345, 
+                         const int iteMax = 5000) {
+  double rhs = n1 * (p + std::log(n * p));
+  arma::vec resSq = arma::square(Y);
+  double rob = std::sqrt((long double)rootg1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
+  updateHuberReg(Z, Y, der, gradOld, lambda, n, rob, n1);
+  arma::vec beta = -gradOld, betaDiff = -gradOld;
+  arma::vec res = Y - Z * beta;
+  resSq = arma::square(res);
+  rob = std::sqrt((long double)rootg1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
+  updateHuberReg(Z, res, der, gradNew, lambda, n, rob, n1);
+  arma::vec gradDiff = gradNew - gradOld;
+  int ite = 1;
+  while (arma::norm(gradNew, "inf") > tol && ite <= iteMax) {
+    double alpha = 1.0;
+    double cross = arma::as_scalar(betaDiff.t() * gradDiff);
+    if (cross > 0) {
+      double a1 = cross / arma::as_scalar(gradDiff.t() * gradDiff);
+      double a2 = arma::as_scalar(betaDiff.t() * betaDiff) / cross;
+      alpha = std::min(std::min(a1, a2), 100.0);
+    }
+    gradOld = gradNew;
+    betaDiff = -alpha * gradNew;
+    beta += betaDiff;
+    res -= Z * betaDiff;
+    resSq = arma::square(res);
+    rob = std::sqrt((long double)rootg1(resSq, n, rhs, arma::min(resSq), arma::accu(resSq)));
+    updateHuberReg(Z, res, der, gradNew, lambda, n, rob, n1);
     gradDiff = gradNew - gradOld;
     ite++;
   }
