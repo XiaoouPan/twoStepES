@@ -24,15 +24,16 @@ qr_norm = qnorm(alpha)
 integrand = function(x) {qnorm(x)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_norm = inte$value / alpha
-df = 4
+df = 3
 qr_t = qt(alpha, df)
 integrand = function(x) {qt(x, df)}
 inte = integrate(integrand, lower = 0, upper = alpha)
 es_t = inte$value / alpha
-M = 50
-qr1 = qr2 = qr3 = matrix(0, M, l)
-es1 = es2 = es3 = es0 = matrix(0, M, l)
-time1 = time2 = time3 = matrix(0, M, l)
+M = 20
+lambda = 0.2
+qr1 = qr2 = qr3 = qr4 = qr5 = matrix(0, M, l)
+es1 = es2 = es3 = es0 = es4 = es5 = matrix(0, M, l)
+time1 = time2 = time3 = time4 = time5 = matrix(0, M, l)
 
 pb = txtProgressBar(style = 3)
 for (j in 1:l) {
@@ -43,8 +44,8 @@ for (j in 1:l) {
     set.seed((j - 1) * M + i)
     X = mvrnorm(n, rep(0, p), Sigma)
     ## Hetero
-    err = rnorm(n)
-    #err = rt(n, df)
+    #err = rnorm(n)
+    err = rt(n, df)
     gamma = runif(p + 1, 0, 2)
     eta = runif(1, 0, 2)
     X = abs(X)
@@ -57,12 +58,12 @@ for (j in 1:l) {
     fit0 = oracle(X, Y, beta_qr, alpha = alpha)
     es0[i, j] = exam(beta_es, fit0$theta)
     
-    start = Sys.time()
-    fit1 = esreg(Y ~ X, alpha = alpha)
-    end = Sys.time()
-    time1[i, j] = as.numeric(difftime(end, start, units = "secs"))
-    qr1[i, j] = exam(beta_qr, fit1$coefficients_q)
-    es1[i, j] = exam(beta_es, fit1$coefficients_e)
+    #start = Sys.time()
+    #fit1 = esreg(Y ~ X, alpha = alpha)
+    #end = Sys.time()
+    #time1[i, j] = as.numeric(difftime(end, start, units = "secs"))
+    #qr1[i, j] = exam(beta_qr, fit1$coefficients_q)
+    #es1[i, j] = exam(beta_es, fit1$coefficients_e)
     
     start = Sys.time()
     fit2 = twoStep(X, Y, alpha = alpha)
@@ -72,19 +73,33 @@ for (j in 1:l) {
     es2[i, j] = exam(beta_es, fit2$theta)
     
     start = Sys.time()
-    fit3 = twoStepRob(X, Y, alpha = alpha)
+    fit3 = twoStepLambda(X, Y, lambda = lambda, alpha = alpha)
     end = Sys.time()
     time3[i, j] = as.numeric(difftime(end, start, units = "secs"))
     qr3[i, j] = exam(beta_qr, fit3$beta)
     es3[i, j] = exam(beta_es, fit3$theta)
+    
+    start = Sys.time()
+    fit4 = twoStepRob(X, Y, alpha = alpha)
+    end = Sys.time()
+    time4[i, j] = as.numeric(difftime(end, start, units = "secs"))
+    qr4[i, j] = exam(beta_qr, fit4$beta)
+    es4[i, j] = exam(beta_es, fit4$theta)
+    
+    start = Sys.time()
+    fit5 = twoStepRobLambda(X, Y, lambda = lambda, alpha = alpha)
+    end = Sys.time()
+    time5[i, j] = as.numeric(difftime(end, start, units = "secs"))
+    qr5[i, j] = exam(beta_qr, fit5$beta)
+    es5[i, j] = exam(beta_es, fit5$theta)
 
     setTxtProgressBar(pb, ((j - 1) * M + i) / (l * M))
   }
 }
 
-write.csv(rbind(time1, time2, time3), "~/Dropbox/SQR/ES/Simulation/time_t4.csv")
-write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/SQR/ES/Simulation/qr_t4.csv")
-write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/SQR/ES/Simulation/es_t4.csv")
+#write.csv(rbind(time1, time2, time3), "~/Dropbox/SQR/ES/Simulation/time_t4.csv")
+#write.csv(rbind(qr1, qr2, qr3), "~/Dropbox/SQR/ES/Simulation/qr_t4.csv")
+#write.csv(rbind(es1, es2, es3, es0), "~/Dropbox/SQR/ES/Simulation/es_t4.csv")
 
 ### Estimation error: QR 
 mean1 = colMeans(qr1, na.rm = TRUE)
@@ -116,15 +131,25 @@ es0 = data[151:200, ]
 
 ### Estimation error: ES 
 mean0 = colMeans(es0, na.rm = TRUE)
-mean1 = colMeans(es1, na.rm = TRUE)
+#mean1 = colMeans(es1, na.rm = TRUE)
 mean2 = colMeans(es2, na.rm = TRUE)
 mean3 = colMeans(es3, na.rm = TRUE)
-dat = rbind(cbind(nseq, mean0), cbind(nseq, mean1), cbind(nseq, mean2), cbind(nseq, mean3))
+mean4 = colMeans(es4, na.rm = TRUE)
+mean5 = colMeans(es5, na.rm = TRUE)
+#dat = rbind(cbind(nseq, mean0), cbind(nseq, mean1), cbind(nseq, mean2), cbind(nseq, mean3), cbind(nseq, mean4), cbind(nseq, mean5))
+dat = rbind(cbind(nseq, mean0), cbind(nseq, mean2), cbind(nseq, mean3), cbind(nseq, mean4), cbind(nseq, mean5))
 dat = as.data.frame(dat)
 colnames(dat) = c("size", "coef")
-dat$type = c(rep("\\texttt{Oracle}", l), rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), 
-             rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed robust method}", l))
-dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed robust method}", "\\texttt{Oracle}"))
+#dat$type = c(rep("\\texttt{Oracle}", l), rep("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", l), 
+#             rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed penalized method}", l), 
+#             rep("\\texttt{Proposed robust method}", l), rep("\\texttt{Proposed penalized robust method}", l))
+#dat$type = factor(dat$type, levels = c("\\texttt{Dimitriadis} \\& \\texttt{Bayer}", "\\texttt{Proposed method}", "\\texttt{Proposed penalized method}", 
+#                                       "\\texttt{Proposed robust method}", "\\texttt{Proposed penalized robust method}", "\\texttt{Oracle}"))
+dat$type = c(rep("\\texttt{Oracle}", l), rep("\\texttt{Proposed method}", l), rep("\\texttt{Proposed penalized method}", l), 
+             rep("\\texttt{Proposed robust method}", l), rep("\\texttt{Proposed penalized robust method}", l))
+dat$type = factor(dat$type, levels = c("\\texttt{Proposed method}", "\\texttt{Proposed penalized method}", 
+                                       "\\texttt{Proposed robust method}", "\\texttt{Proposed penalized robust method}", "\\texttt{Oracle}"))
+
 
 setwd("~/Dropbox/SQR/ES/Simulation")
 tikz("plot.tex", standAlone = TRUE, width = 5, height = 5)
@@ -132,10 +157,10 @@ ggplot(dat, aes(x = size, y = coef)) +
   geom_line(aes(y = coef, color = type, linetype = type), size = 3) + 
   #geom_ribbon(aes(y = coef, ymin = low, ymax = upp, fill = type), alpha = 0.3)
   theme_bw() + xlab("Sample size") + ylab("Estimation error of ES") +
-  theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
-  #theme(legend.position = c(0.63, 0.80), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
-  #      legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
-  #      axis.title = element_text(size = 20))
+  #theme(legend.position = "none", axis.text = element_text(size = 15), axis.title = element_text(size = 20))
+  theme(legend.position = c(0.63, 0.80), legend.title = element_blank(), legend.text = element_text(size = 15), legend.key.size = unit(1, "cm"),
+        legend.background = element_rect(fill = alpha("white", 0)), axis.text = element_text(size = 15), 
+        axis.title = element_text(size = 20))
 dev.off()
 tools::texi2dvi("plot.tex", pdf = T)
 
